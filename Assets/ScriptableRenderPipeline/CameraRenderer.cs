@@ -20,6 +20,7 @@ public class CameraRenderer
 
         // 绘制几何
         DrawVisibleGeometry();
+        DrawGizmos();
 
         Submit();
     }
@@ -72,6 +73,17 @@ public class CameraRenderer
         //filteringSettings = new FilteringSettings(RenderQueueRange.transparent, -1);
         filteringSettings.renderQueueRange = RenderQueueRange.transparent;
         context.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSettings);
+    }
+
+    private void DrawGizmos()
+    {
+#if UNITY_EDITOR
+        if (UnityEditor.Handles.ShouldRenderGizmos())
+        {
+            context.DrawGizmos(camera, GizmoSubset.PreImageEffects);
+            context.DrawGizmos(camera, GizmoSubset.PostImageEffects);
+        }
+#endif
     }
 
     private void Submit()

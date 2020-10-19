@@ -4,6 +4,10 @@
 	{
 		_Color("Color Tint", Color) = (0.5,0.5,0.5)
 		_MainTex("MainTex",2D) = "white"{}
+
+
+
+
 	}
 
 	HLSLINCLUDE
