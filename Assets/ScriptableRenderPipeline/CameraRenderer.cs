@@ -1,12 +1,27 @@
 ﻿using UnityEngine.Rendering;
 using UnityEngine;
+using UnityEngine.Profiling;
 
 public class CameraRenderer
 {
     ScriptableRenderContext context;
     Camera camera;
+#if UNITY_EDITOR
+    private string SampleName { get; set; }
+#else
+    private const SampleName = BufferName;
+#endif
     private const string BufferName = "Render Camera";
     CommandBuffer cameraBuffer = new CommandBuffer() { name = BufferName };
+    static ShaderTagId[] legacyShaderTagIds =
+    {
+        new ShaderTagId("Always"),
+        new ShaderTagId("ForwardBase"),
+        new ShaderTagId("PrepassBase"),
+        new ShaderTagId("Vertex"),
+        new ShaderTagId("VertexLMRGBM"),
+        new ShaderTagId("VertexLM"),
+    };
     ScriptableCullingParameters cullingParameters;
     CullingResults cullingResults;
 
@@ -15,14 +30,41 @@ public class CameraRenderer
         this.context = context;
         this.camera = camera;
 
+        PrepareBuffer();
+        PrepareForSceneWindow();
         if (!Cull()) { return; }
         Setup();
 
+        // 绘制不受支持的Shader
+        DrawUnsupportedShaders();
         // 绘制几何
         DrawVisibleGeometry();
+        // 绘制Gizmos
         DrawGizmos();
 
         Submit();
+    }
+
+
+
+    private void PrepareBuffer()
+    {
+        Profiler.BeginSample("Editor Only");
+        cameraBuffer.name = SampleName = camera.name;
+        Profiler.EndSample();
+    }
+
+    private void PrepareForSceneWindow()
+    {
+#if UNITY_EDITOR
+
+        // 为Scene窗口渲染时，必须通过EmitWorldGeometryForSceneView并使用Camera作为参数来讲UI显式地添加到世界几何中
+        if (camera.cameraType == CameraType.SceneView)
+        {
+            ScriptableRenderContext.EmitWorldGeometryForSceneView(camera);
+        }
+
+#endif
     }
 
     private bool Cull()
@@ -41,8 +83,9 @@ public class CameraRenderer
         // 将摄像机属性应用于上下文。设置矩阵以及其他一些属性
         context.SetupCameraProperties(camera);
         // 清除用的Buffer
-        cameraBuffer.ClearRenderTarget(true, true, Color.clear);
-        cameraBuffer.BeginSample(BufferName);
+        CameraClearFlags flags = camera.clearFlags;
+        cameraBuffer.ClearRenderTarget(flags <= CameraClearFlags.Depth, flags == CameraClearFlags.Color, Color.clear);
+        cameraBuffer.BeginSample(SampleName);
         ExcuteBuffer();
     }
 
@@ -52,10 +95,25 @@ public class CameraRenderer
         cameraBuffer.Clear();
     }
 
-    //static ShaderTagId unlitShaderTagId = new ShaderTagId("UniversalForward");
-    //static ShaderTagId unlitShaderTagId = new ShaderTagId("SRPDefaultUnlit");
-    static ShaderTagId unlitShaderTagId = new ShaderTagId("Always");
+    private static Material _errorMaterial = null;
 
+    private void DrawUnsupportedShaders()
+    {
+#if UNITY_EDITOR
+        if (_errorMaterial == null) { _errorMaterial = new Material(Shader.Find("Hidden/InternalErrorShader")); }
+
+        var drawingSettings = new DrawingSettings(legacyShaderTagIds[0], new SortingSettings(camera)) { overrideMaterial = _errorMaterial };
+        for (int i = 1, length = legacyShaderTagIds.Length; i < length; i++)
+        {
+            drawingSettings.SetShaderPassName(i, legacyShaderTagIds[i]);
+        }
+        var filteringSettings = FilteringSettings.defaultValue;
+
+        context.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSettings);
+#endif
+    }
+
+    static ShaderTagId unlitShaderTagId = new ShaderTagId("SRPDefaultUnlit");
     private void DrawVisibleGeometry()
     {
         var sortingSettings = new SortingSettings(camera) { criteria = SortingCriteria.CommonOpaque };
@@ -70,7 +128,6 @@ public class CameraRenderer
 
         sortingSettings.criteria = SortingCriteria.CommonTransparent;
         drawingSettings.sortingSettings = sortingSettings;
-        //filteringSettings = new FilteringSettings(RenderQueueRange.transparent, -1);
         filteringSettings.renderQueueRange = RenderQueueRange.transparent;
         context.DrawRenderers(cullingResults, ref drawingSettings, ref filteringSettings);
     }
@@ -88,7 +145,7 @@ public class CameraRenderer
 
     private void Submit()
     {
-        cameraBuffer.EndSample(BufferName);
+        cameraBuffer.EndSample(SampleName);
         ExcuteBuffer();
         context.Submit();
     }
