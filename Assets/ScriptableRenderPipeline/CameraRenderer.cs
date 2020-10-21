@@ -25,7 +25,7 @@ public class CameraRenderer
     ScriptableCullingParameters cullingParameters;
     CullingResults cullingResults;
 
-    public void Render(ScriptableRenderContext context, Camera camera)
+    public void Render(ScriptableRenderContext context, Camera camera, bool enableDynamicBatching, bool enableGPUInstancing)
     {
         this.context = context;
         this.camera = camera;
@@ -38,7 +38,7 @@ public class CameraRenderer
         // 绘制不受支持的Shader
         DrawUnsupportedShaders();
         // 绘制几何
-        DrawVisibleGeometry();
+        DrawVisibleGeometry(enableDynamicBatching, enableGPUInstancing);
         // 绘制Gizmos
         DrawGizmos();
 
@@ -114,10 +114,10 @@ public class CameraRenderer
     }
 
     static ShaderTagId unlitShaderTagId = new ShaderTagId("SRPDefaultUnlit");
-    private void DrawVisibleGeometry()
+    private void DrawVisibleGeometry(bool enableDynamicBatching, bool enableGPUInstancing)
     {
         var sortingSettings = new SortingSettings(camera) { criteria = SortingCriteria.CommonOpaque };
-        DrawingSettings drawingSettings = new DrawingSettings(unlitShaderTagId, sortingSettings);
+        DrawingSettings drawingSettings = new DrawingSettings(unlitShaderTagId, sortingSettings) { enableDynamicBatching = enableDynamicBatching, enableInstancing = enableGPUInstancing };
         // 这种写法不行
         //FilteringSettings filteringSettings = new FilteringSettings() { renderQueueRange = RenderQueueRange.all, layerMask = -1 };
         // 必须要这么写

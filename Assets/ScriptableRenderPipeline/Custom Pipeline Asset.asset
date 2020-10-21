@@ -10,5 +10,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5c30bc48024c73e4887d4d6d773885ff, type: 3}
-  m_Name: New My Pipeline Asset
+  m_Name: Custom Pipeline Asset
   m_EditorClassIdentifier: 
+  enableDynamicBatching: 1
+  enableGPUInstancing: 1
+  enableSRPBatcher: 1
