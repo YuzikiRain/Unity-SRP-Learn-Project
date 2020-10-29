@@ -15,3 +15,7 @@ MonoBehaviour:
   enableDynamicBatching: 1
   enableGPUInstancing: 1
   enableSRPBatcher: 1
+  shadowSettings:
+    maxDistance: 10
+    directional:
+      atlasSize: 512

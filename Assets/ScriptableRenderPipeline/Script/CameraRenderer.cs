@@ -12,7 +12,7 @@ public class CameraRenderer
     private const SampleName = BufferName;
 #endif
     private const string BufferName = "Render Camera";
-    CommandBuffer cameraBuffer = new CommandBuffer() { name = BufferName };
+    CommandBuffer buffer = new CommandBuffer() { name = BufferName };
     static ShaderTagId[] legacyShaderTagIds =
     {
         new ShaderTagId("Always"),
@@ -25,32 +25,37 @@ public class CameraRenderer
     ScriptableCullingParameters cullingParameters;
     CullingResults cullingResults;
 
-    public void Render(ScriptableRenderContext context, Camera camera, bool enableDynamicBatching, bool enableGPUInstancing)
+    Lighting lighting = new Lighting();
+
+    public void Render(ScriptableRenderContext context, Camera camera, bool enableDynamicBatching, bool enableGPUInstancing, ShadowSettings shadowSettings)
     {
         this.context = context;
         this.camera = camera;
 
         PrepareBuffer();
         PrepareForSceneWindow();
-        if (!Cull()) { return; }
+        if (!Cull(shadowSettings.maxDistance)) { return; }
+        buffer.BeginSample(SampleName);
+        ExecuteBuffer();
+        lighting.Setup(context, cullingResults, shadowSettings);
+        buffer.EndSample(SampleName);
         Setup();
 
-        // 绘制不受支持的Shader
-        DrawUnsupportedShaders();
         // 绘制几何
         DrawVisibleGeometry(enableDynamicBatching, enableGPUInstancing);
+        // 绘制不受支持的Shader
+        DrawUnsupportedShaders();
         // 绘制Gizmos
         DrawGizmos();
 
+        lighting.Cleanup();
         Submit();
     }
-
-
 
     private void PrepareBuffer()
     {
         Profiler.BeginSample("Editor Only");
-        cameraBuffer.name = SampleName = camera.name;
+        buffer.name = SampleName = camera.name;
         Profiler.EndSample();
     }
 
@@ -58,7 +63,7 @@ public class CameraRenderer
     {
 #if UNITY_EDITOR
 
-        // 为Scene窗口渲染时，必须通过EmitWorldGeometryForSceneView并使用Camera作为参数来讲UI显式地添加到世界几何中
+        // 为Scene窗口渲染时，必须通过EmitWorldGeometryForSceneView并使用Camera作为参数来将UI显式地添加到世界几何中
         if (camera.cameraType == CameraType.SceneView)
         {
             ScriptableRenderContext.EmitWorldGeometryForSceneView(camera);
@@ -67,11 +72,12 @@ public class CameraRenderer
 #endif
     }
 
-    private bool Cull()
+    private bool Cull(float maxShadowDistance)
     {
         if (camera.TryGetCullingParameters(out cullingParameters))
         {
-            cullingParameters.isOrthographic = false;
+            //cullingParameters.isOrthographic = false;
+            cullingParameters.shadowDistance = Mathf.Min(maxShadowDistance, camera.farClipPlane);
             cullingResults = context.Cull(ref cullingParameters);
             return true;
         }
@@ -84,15 +90,15 @@ public class CameraRenderer
         context.SetupCameraProperties(camera);
         // 清除用的Buffer
         CameraClearFlags flags = camera.clearFlags;
-        cameraBuffer.ClearRenderTarget(flags <= CameraClearFlags.Depth, flags == CameraClearFlags.Color, Color.clear);
-        cameraBuffer.BeginSample(SampleName);
-        ExcuteBuffer();
+        buffer.ClearRenderTarget(flags <= CameraClearFlags.Depth, flags == CameraClearFlags.Color, Color.clear);
+        buffer.BeginSample(SampleName);
+        ExecuteBuffer();
     }
 
-    private void ExcuteBuffer()
+    private void ExecuteBuffer()
     {
-        context.ExecuteCommandBuffer(cameraBuffer);
-        cameraBuffer.Clear();
+        context.ExecuteCommandBuffer(buffer);
+        buffer.Clear();
     }
 
     private static Material _errorMaterial = null;
@@ -114,10 +120,12 @@ public class CameraRenderer
     }
 
     static ShaderTagId unlitShaderTagId = new ShaderTagId("SRPDefaultUnlit");
+    static ShaderTagId litShaderTagId = new ShaderTagId("CustomLit");
     private void DrawVisibleGeometry(bool enableDynamicBatching, bool enableGPUInstancing)
     {
         var sortingSettings = new SortingSettings(camera) { criteria = SortingCriteria.CommonOpaque };
         DrawingSettings drawingSettings = new DrawingSettings(unlitShaderTagId, sortingSettings) { enableDynamicBatching = enableDynamicBatching, enableInstancing = enableGPUInstancing };
+        drawingSettings.SetShaderPassName(1, litShaderTagId);
         // 这种写法不行
         //FilteringSettings filteringSettings = new FilteringSettings() { renderQueueRange = RenderQueueRange.all, layerMask = -1 };
         // 必须要这么写
@@ -145,8 +153,8 @@ public class CameraRenderer
 
     private void Submit()
     {
-        cameraBuffer.EndSample(SampleName);
-        ExcuteBuffer();
+        buffer.EndSample(SampleName);
+        ExecuteBuffer();
         context.Submit();
     }
 }
