@@ -1,12 +1,12 @@
 ﻿using UnityEngine;
 using UnityEngine.Rendering;
 
-public class CustomPipeline : RenderPipeline
+public class CustomRenderPipeline : RenderPipeline
 {
     private bool enableDynamicBatching, enableGPUInstancing;
     [SerializeField] private ShadowSettings shadowSettings = default;
 
-    public CustomPipeline(bool enableDynamicBatching, bool enableGPUInstancing, bool enableSRPBatcher, ShadowSettings shadowSettings)
+    public CustomRenderPipeline(bool enableDynamicBatching, bool enableGPUInstancing, bool enableSRPBatcher, ShadowSettings shadowSettings)
     {
         this.enableDynamicBatching = enableDynamicBatching;
         this.enableGPUInstancing = enableGPUInstancing;
@@ -15,14 +15,20 @@ public class CustomPipeline : RenderPipeline
         GraphicsSettings.lightsUseLinearIntensity = true;
     }
 
+    /// <summary>
+    /// 每一渲染帧（不是MonoBehavior的逻辑帧），渲染管线会使用所有相机进行渲染
+    /// </summary>
+    /// <param name="context"></param>
+    /// <param name="cameras"></param>
     protected override void Render(ScriptableRenderContext context, Camera[] cameras)
     {
+        // 这里的相机数组是通过camera.depth从小到大排序的
         foreach (var camera in cameras)
         {
-            renderer.Render(context, camera, enableDynamicBatching, enableGPUInstancing, shadowSettings);
+            cameraRenderer.Render(context, camera, enableDynamicBatching, enableGPUInstancing, shadowSettings);
         }
     }
 
-    CameraRenderer renderer = new CameraRenderer();
+    CameraRenderer cameraRenderer = new CameraRenderer();
 
 }
