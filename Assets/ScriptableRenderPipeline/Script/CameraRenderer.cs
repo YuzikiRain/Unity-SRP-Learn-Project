@@ -45,6 +45,8 @@ public class CameraRenderer
 
         // 设置矩阵等属性
         Setup();
+        // 设置光照（主要是设置光照属性到以便shader
+        lighting.Setup(context, cullingResults, shadowSettings);
 
         // 绘制可见的几何图形
         DrawVisibleGeometry(enableDynamicBatching, enableGPUInstancing);
@@ -149,8 +151,9 @@ public class CameraRenderer
         // 用于决定应用正交还是基于距离的排序
         SortingSettings sortingSettings = new SortingSettings(camera) { criteria = SortingCriteria.CommonOpaque };
         // DrawingSettings中的ShaderTagId表示允许tag为ShaderTagId的pass
-        // 设置第0个pass的tag为 unlitShaderTagId
-        DrawingSettings drawingSettings = new DrawingSettings(unlitShaderTagId, sortingSettings) { enableDynamicBatching = enableDynamicBatching, enableInstancing = enableGPUInstancing };
+       DrawingSettings drawingSettings = new DrawingSettings(unlitShaderTagId, sortingSettings) { enableDynamicBatching = enableDynamicBatching, enableInstancing = enableGPUInstancing };
+       //  设置第0个pass的tag为 unlitShaderTagId
+        drawingSettings.SetShaderPassName(0, unlitShaderTagId);
         // 设置第1个pass的tag为 litShaderTagId
         drawingSettings.SetShaderPassName(1, litShaderTagId);
         // 这种写法不行

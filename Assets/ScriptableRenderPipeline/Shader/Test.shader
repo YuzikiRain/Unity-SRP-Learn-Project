@@ -1,9 +1,11 @@
-﻿Shader "Custom RP/Unlit"
+﻿Shader "Custom RP/TestUnlit"
 {
 	Properties
 	{
 		_BaseMap("Texture", 2D) = "white" {}
-		_BaseColor("Color", Color) =  (1, 1, 1, 1)
+		//_BaseColor("Color", Color) =  (1, 1, 1, 1)
+		_Test1("Test1", Vector) = (1,22,3,4)
+		_Test2("Test2", Float) = 1
 		_Cutoff("Alpha Cutoff", Range(0, 1)) = 0.5
 		[Toggle(_CLIPPING)] _Clipping("Alpha Clipping", Float) = 0
 		[Enum(UnityEngine.Rendering.BlendMode)] _SrcBlend("Source Blend", Float) = 1
@@ -13,8 +15,11 @@
 
 	SubShader
 	{
+
+
 		Pass
 		{
+
 			// 不需要设置tag也可以正常绘制
 			//Tags {"LightMode" = "SRPDefaultUnlit"}
 			Blend [_SrcBlend] [_DstBlend]
@@ -32,9 +37,7 @@
 			// #pragma fragment 片元着色器名称
 			#pragma fragment UnlitPassFragment
 
-			#include "UnlitPass.hlsl"
-
-
+			#include "TestUnlitPass.hlsl"
 
 			ENDHLSL
 		}

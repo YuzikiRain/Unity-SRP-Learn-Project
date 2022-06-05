@@ -3,6 +3,7 @@ using UnityEngine.Rendering;
 
 public class CustomRenderPipeline : RenderPipeline
 {
+    CameraRenderer cameraRenderer = new CameraRenderer();
     private bool enableDynamicBatching, enableGPUInstancing;
     [SerializeField] private ShadowSettings shadowSettings = default;
 
@@ -28,7 +29,4 @@ public class CustomRenderPipeline : RenderPipeline
             cameraRenderer.Render(context, camera, enableDynamicBatching, enableGPUInstancing, shadowSettings);
         }
     }
-
-    CameraRenderer cameraRenderer = new CameraRenderer();
-
 }

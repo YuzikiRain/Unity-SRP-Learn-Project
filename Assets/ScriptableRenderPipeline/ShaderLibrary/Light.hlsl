@@ -2,6 +2,13 @@
 #define UNITY_LIGHT_INCLUDED
 #define MAX_DIRECTIONAL_LIGHT_COUNT 4
 
+// 通过外部cpu端设置
+/*
+因为着色器对结构化缓冲区的支持还不够好。
+它们要么根本不受支持，要么仅在片段程序中使用，要么性能比常规数组差。
+好消息是数据在 CPU 和 GPU 之间传递的细节只在少数几个地方很重要，所以很容易改变。
+这是使用Light结构体的另一个好处。
+*/
 CBUFFER_START(_CustomLight)
 	int _DirectionalLightCount;
 	float4 _DirectionalLightColors[MAX_DIRECTIONAL_LIGHT_COUNT];

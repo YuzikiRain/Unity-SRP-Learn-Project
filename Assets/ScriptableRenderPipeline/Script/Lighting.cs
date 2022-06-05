@@ -39,13 +39,14 @@ public class Lighting
         for (int i = 0; i < visibleLights.Length; i++)
         {
             var visibleLight = visibleLights[i];
+            // 处理方向光
             if (visibleLight.lightType == LightType.Directional)
             {
                 if (i >= maxDirLightCount) { break; }
                 SetupDirectionalLight(i, ref visibleLight);
             }
         }
-
+        // 通过CommandBuffer来传递属性给GPU（通过告知
         buffer.SetGlobalInt(dirLightCountId, visibleLights.Length);
         buffer.SetGlobalVectorArray(dirLightColorsId, dirLightColors);
         buffer.SetGlobalVectorArray(dirLightDirectionsId, dirLightDirections);
@@ -53,6 +54,7 @@ public class Lighting
         buffer.SetGlobalVectorArray(dirLightShadowDataId, dirLightShadowData);
     }
 
+    // 将每个方向光装进数组中
     private void SetupDirectionalLight(int index, ref VisibleLight visibleLight)
     {
         dirLightColors[index] = visibleLight.finalColor;

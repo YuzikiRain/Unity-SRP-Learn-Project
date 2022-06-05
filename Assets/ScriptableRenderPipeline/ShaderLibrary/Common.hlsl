@@ -5,6 +5,7 @@
 #include "Packages/com.unity.render-pipelines.core/ShaderLibrary/CommonMaterial.hlsl"
 #include "UnityInput.hlsl"
 
+// 用宏替换来表示之前常用的矩阵变量名称
 #define UNITY_MATRIX_M unity_ObjectToWorld
 #define UNITY_MATRIX_I_M unity_WorldToObject
 #define UNITY_MATRIX_V unity_MatrixV
